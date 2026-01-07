@@ -1,5 +1,5 @@
 build:
-	go build -o bin/pokeGo cmd/main.go cmd/types.go cmd/cmdHandlers.go
+	go build -o bin/pokeGo cmd/main.go
 
 run: 
 	./bin/pokeGo
