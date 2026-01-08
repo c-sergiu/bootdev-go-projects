@@ -2,32 +2,16 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"math/rand"
 	"encoding/json"
 	"github.com/c-sergiu/pokego/internal/pokego"
 )
 
-
-func CommandExit(ctx *pokego.Context, options []string) error {
-	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
-	return nil
-}
-
-func CommandHelp(ctx *pokego.Context, options []string) error {
-	fmt.Printf("Welcome to the Pokedex!\nUsage:\n\n")
-	for _, c := range getCommands() {
-		fmt.Printf("%s: %s\n", c.Name, c.Description)
-	}
-	return nil
-}
-
 func CommandInspect(ctx *pokego.Context, options []string) error {
-	if len(options) < 2 {
+	if len(options) < 1 {
 		return fmt.Errorf("please provide the pokemon's name")
 	}
-	name := options[1]
+	name := options[0]
 	if p, ok := ctx.Dex[name]; ok {
 		fmt.Printf("Name: %s\nHeight: %d\nWeight: %d\n", p.Name, p.Height, p.Weight)
 		fmt.Println("Stats:")
@@ -45,10 +29,10 @@ func CommandInspect(ctx *pokego.Context, options []string) error {
 }
 
 func CommandCatch(ctx *pokego.Context, options []string) error {
-	if len(options) < 2 {
+	if len(options) < 1 {
 		return fmt.Errorf("please provide the pokemon's name")
 	}
-	name := options[1]
+	name := options[0]
 	data, err := ctx.Client.GetPokemon(name)
 	if err != nil {return err}
 
@@ -66,12 +50,11 @@ func CommandCatch(ctx *pokego.Context, options []string) error {
 	return nil
 }
 
-
 func CommandExplore(ctx *pokego.Context, options []string) error {
-	if len(options) < 2 {
+	if len(options) < 1 {
 		return fmt.Errorf("please provide the map name")
 	}
-	data, err := ctx.Client.GetMap(options[1])
+	data, err := ctx.Client.GetMap(options[0])
 	if err != nil {return err}
 
 	var encounters pokego.Encounters
