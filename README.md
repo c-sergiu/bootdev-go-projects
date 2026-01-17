@@ -1,2 +1,2 @@
-# PokeGo
-# Gator
+# pokeGo
+# gator
