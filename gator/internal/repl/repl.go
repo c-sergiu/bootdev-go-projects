@@ -28,22 +28,23 @@ func (r *REPL[T]) Run() {
 		input := scanner.Text()
 		tokens := strings.Fields(input)
 		if err := r.HandleCommand(tokens); err != nil {
-			fmt.Printf("%v\n", err)
-			break
+			fmt.Println(err)
 		}
 	}
 
 }
-
 func (r *REPL[T]) HandleCommand(args []string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("Invalid input")
+	args_l := len(args)
+	if args_l < 1 {
+		return fmt.Errorf("missing command")
 	}
 	cmd, ok := r.Commands[args[0]]
 	if ok {
-		args := args[1:]
-		if err := cmd.Exec(r.Config, args); err != nil {
-			return err
+		if args_l - 1 < cmd.MinArgs {
+			return fmt.Errorf("Not enaugh args")
+		}
+		if err := cmd.Exec(r.Config, args[1:]); err != nil {
+			fmt.Printf("%v\n", err)
 		}
 	} else {
 		return fmt.Errorf("command: %s does not exit\n", args[0])
@@ -60,6 +61,7 @@ func NewREPL[T any](config T, prompt string) *REPL[T] {
 	r.Register(Command[T]{
 		Name: "help",
 		Desc: "Displays the commands available",
+		MinArgs: 0,
 		Exec: func(cfg T, args []string) error {
 			for _, cmd := range r.Commands {
 				fmt.Printf("%s: %s\n", cmd.Name, cmd.Desc)
@@ -70,6 +72,7 @@ func NewREPL[T any](config T, prompt string) *REPL[T] {
 	r.Register(Command[T]{
 		Name: "exit",
 		Desc: "Exit the program",
+		MinArgs: 0,
 		Exec: func(cfg T, args []string) error {
 			fmt.Println("Goodbye!")
 			os.Exit(0)
@@ -83,5 +86,6 @@ func NewREPL[T any](config T, prompt string) *REPL[T] {
 type Command[T any] struct {
 	Name string
 	Desc string
+	MinArgs int
 	Exec func(cfg T, args []string) error
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/c-sergiu/bootdev-go-projects/gator/internal/database"
+	"github.com/c-sergiu/bootdev-go-projects/gator/internal/rss"
 	"github.com/google/uuid"
 	"time"
 	"fmt"
@@ -12,10 +13,6 @@ import (
 import _ "github.com/lib/pq"
 
 func handlerLogin(s* State, args[]string) error {
-	if len(args) < 1 {
-	return fmt.Errorf("No args")
-	}
-
 	user, err := s.db.GetUser(
 	context.Background(),
 		args[0])
@@ -30,10 +27,6 @@ func handlerLogin(s* State, args[]string) error {
 	return nil
 }
 func handlerRegister(s* State, args[]string) error {
-	if len(args) < 1 {
-		return fmt.Errorf("No Args")
-	}
-
 	user, err := s.db.CreateUser(
 		context.Background(),
 		database.CreateUserParams{
@@ -42,13 +35,14 @@ func handlerRegister(s* State, args[]string) error {
 			UpdatedAt: time.Now(),
 			Name: args[0],
 		})
-
 	if err != nil {
 		return err
 	}
+
 	if err := s.cfg.SetUser(user.Name); err != nil {
 		return err
 	}
+
 	fmt.Println("Register Successful")
 	return nil
 }
@@ -74,13 +68,12 @@ func handlerUsers(s* State, args[]string) error {
 	return nil
 }
 func handlerAgg(s* State, args[]string) error {
-	if len(args) < 1 {return fmt.Errorf("Not enaugh args")}
 	timeBetween, err := time.ParseDuration(args[0])
 	if err != nil {return err}
 
 	ticker := time.NewTicker(timeBetween)
 	for ; ; <-ticker.C {
-		if err := scrapeFeeds(s); err != nil {
+		if err := rss.ScrapeFeeds(s.db); err != nil {
 			return err
 		}
 	}
@@ -88,32 +81,22 @@ func handlerAgg(s* State, args[]string) error {
 	return nil
 }
 func handlerAddFeed(s* State, args[]string, user database.User) error {
-	if len(args) < 2 { return fmt.Errorf("Not enaugh args") }
-
 	feedName := args[0]
 	feedURL := args[1]
 	
-	feed_params := database.CreateFeedParams{
+	feed, err := s.db.CreateFeed(context.Background(), database.CreateFeedParams{
 		ID: uuid.New(),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 		Name: feedName,
 		Url: feedURL,
 		UserID: user.ID,
-	}
-
-	feed, err := s.db.CreateFeed(context.Background(), feed_params)
+	})
 	if err != nil {
 		return err
 	}
 	
-	fmt.Printf("Feed created successfully!\nID: %v\nCreatedAt: %v\nUpdatedAt: %v\nName: %v\nUrl: %v\nUserID: %v\n",
-		feed.ID,
-		feed.CreatedAt,
-		feed.UpdatedAt,
-		feed.Name,
-		feed.Url,
-		feed.UserID)
+	fmt.Printf("Feed created successfully!\n")
 
 	follow_params := database.CreateFeedFollowParams{
 		ID: uuid.New(),
@@ -133,7 +116,6 @@ func handlerAddFeed(s* State, args[]string, user database.User) error {
 		feed_follow.UserName)
 
 	return nil
-
 }
 func handlerFeeds(s* State, args[]string) error {
 	feeds, err := s.db.GetAllFeeds(context.Background())
@@ -150,9 +132,6 @@ func handlerFeeds(s* State, args[]string) error {
 
 }
 func handlerFollow(s* State, args[]string, user database.User) error {
-	if len(args) < 1 {
-		return fmt.Errorf("Not enaugh args")
-	}
 	url := args[0]
 	feed, err := s.db.GetFeedByUrl(context.Background(), url)
 	if err != nil { return err }
@@ -188,7 +167,6 @@ func handlerFollowing(s* State, args[]string, user database.User) error {
 }
 
 func handlerUnfollow(s* State, args[]string, user database.User) error {
-	if len(args) < 1 {return fmt.Errorf("Not enaugh args")}
 	url := args[0]
 
 	feed, err := s.db.GetFeedByUrl(context.Background(), url)
